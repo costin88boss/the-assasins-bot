@@ -139,4 +139,4 @@ function SendToChannel(Answers, User) {
         ).setFooter("bot is in beta, so please manage yourself the user."))
 }
 
-bot.login('ODA0MjM2NTM4OTg0NTI5OTIw.YBJZpA.ffQxr-l5T8rvPhRPbILTdOWP6rY')
+bot.login(process.env.BOT_TOKEN)
