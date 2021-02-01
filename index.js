@@ -3,6 +3,7 @@ const bot = new Discord.Client()
 var prefix = ';'
 
 var Usersapplying = [{id:Number, timestamp:Number}]
+var Usersapplyingchangeable = []
 var ApplyChannel = null
 var CommandsChannel = null
 var ApplyRole = null
@@ -30,7 +31,7 @@ bot.on('message', message => {
             {name:'applyroles', value:'set the channel to send applications.'},
             {name:'applyneededrole', value:"set the needed role to access moderation commands. THIS COMMAND IS ONLY ACCESSIBLE BY COSTIN"},
             {name:'applychannel', value:'set the channel to log applications.'},
-            {name:'accept [USER] [IsPvp][IsBuild][IsAdvent]', value:'accept the user. replace the [Is...] with 0 or 1 if they will get those roles.'}
+            {name:'accept [USER] [IsPvp][IsBuild][IsExplorer]', value:'accept the user. replace the [Is...] with 0 or 1 if they will get those roles.'}
         )
         .setColor('#535C69')
         .setFooter("Made by Costin88boss")
@@ -68,10 +69,10 @@ bot.on('message', message => {
         message.author.send("**1)** Why do you want to join us? ")
 
         Usersapplying.push({id:message.author.id, timestamp:Date.now()})
+        Usersapplyingchangeable.push(message.author.id)
 
         const filter = m => m.author == message.author
         var answers = [Discord.Message]
-        message.content.starts
         
         message.author.createDM().then((channel) => 
         {channel.awaitMessages(filter, { max: 1}).then
@@ -93,15 +94,15 @@ bot.on('message', message => {
                                 message.author.dmChannel.awaitMessages(filter, { max: 1}).then
                                 (collected => {
                                     answers.push(collected.first())
-                                    message.author.send("**6)** If you are applying for Builder, rate you building skills from 1-10 and tell us what client you use.");
+                                    message.author.send("**6)** If you are applying for Builder, rate you building skills from 1-10 and tell us what client you use, else say no.");
                                     message.author.dmChannel.awaitMessages(filter, { max: 1}).then
                                     (collected => {
                                         answers.push(collected.first())
-                                        message.author.send("6.1) If you are applying for Soldier, Rate your PVPskills from 1-10 and tell us what client you use.");
+                                        message.author.send("**6.1)** If you are applying for Soldier, Rate your PVP skills from 1-10 and tell us what client you use, else say no.");
                                         message.author.dmChannel.awaitMessages(filter, { max: 1}).then
                                         (collected => {
                                             answers.push(collected.first())
-                                            message.author.send("**6.2)** If you are applying for Explorer, Rate you eltraflight from 1-10 and tell us what client you use.");
+                                            message.author.send("**6.2)** If you are applying for Explorer, Rate you elytraflight from 1-10 and tell us what client you use, else say no.");
                                             message.author.dmChannel.awaitMessages(filter, { max: 1}).then
                                             (collected => {
                                                 answers.push(collected.first())
@@ -141,23 +142,24 @@ bot.on('message', message => {
         if (message.member.roles.cache.has(ApplyRole) || message.author.id == "471746995737067554")
         if (message.mentions.roles.size == 0){
             message.channel.send("There must be 3 roles!");
-            message.channel.send("also, the order is this: Pvper, Builder, Adventurer")
+            message.channel.send("also, the order is this: Pvper, Builder, Explorer")
         }
         else if (message.mentions.roles.size == 3){
             let Args = message.content.split(' ');
             Pvper = getRoleFromMention(Args[1], message)
             Builder = getRoleFromMention(Args[2], message)
-            Adventurer = getRoleFromMention(Args[3], message)
+            Explorer = getRoleFromMention(Args[3], message)
             message.channel.send("done");
         }
         else if (message.mentions.roles.size >= 4){
-            message.channel.send("Why are you setupping more than 3 roles? don't you need only pvper, builder, and adventurer?");
+            message.channel.send("Why are you setupping more than 3 roles? don't you need only pvper, builder, and explorer?");
         }}
     
     else message.channel.send("Costin is an idiot for not setupping the perm role.");
     }
     if(message.content.toLowerCase().startsWith(prefix + "accept"))
     {
+        if (message.member.roles.cache.has(ApplyRole) || message.author.id == "471746995737067554"){
         let Args = message.content.split(' ');
         if (Args[1] != null){
         if (Args[1].match(Discord.MessageMentions.USERS_PATTERN) != null){
@@ -168,13 +170,12 @@ bot.on('message', message => {
             if (Args[2] == 0 || Args[2] == 1){
                 if(Args[3] == 0 || Args[3] == 1){
                     if (Args[4] == 0 || Args[4] == 1){
-                        console.log(Builder)
                         let Member = message.guild.members.cache.find(e => e.id == User);
+                        if (Usersapplyingchangeable.includes(Member.id)){
                             let pvper
                             let builder
-                            let adventurer
+                            let explorer
                             let GotRoles
-                            let Once
                             GotRoles = " ";
                             if (Args[2] == 1){
                                 pvper = true
@@ -185,32 +186,44 @@ bot.on('message', message => {
                                 GotRoles += "Builder "
                                 }
                             if (Args[4] == 1){
-                                adventurer = true;
-                                GotRoles += "Adventurer "
+                                explorer = true;
+                                GotRoles += "Explorer"
                             }
-                            message.channel.send("User is now a member. if he doesn't have the roles, then this bot doesn't have the permission to.")
-                            bot.users.cache.find(e => e.id == User).send("Your application has been accepted! roles given by the bot:" + GotRoles + ". if you got no roles, then it means this bot doesn't have  the permission to.")
-
+                            if (GotRoles != " "){
+                            message.channel.send("User is now a member.")
+                            message.channel.send("His/Her/Their roles:" + GotRoles)
+                            bot.users.cache.find(e => e.id == User).send("Your application has been accepted! roles given by the bot:" + GotRoles + ".")
+                            }
+                            else{
+                                message.channel.send("User has been denied!")
+                                bot.users.cache.find(e => e.id == User).send("Your application has been denied!")
+                            }
                             if (pvper)
                             Member.roles.add(Pvper).catch(() => {});
                             if (builder)
                             Member.roles.add(Builder).catch(() => {});
-                            if (adventurer)
-                            Member.roles.add(Adventurer).catch(() => {});
-                    }
+                            if (explorer)
+                            Member.roles.add(Explorer).catch(() => {message.channel.send("This bot doesn't have the permission!!")});
+
+                            Usersapplyingchangeable = Usersapplyingchangeable.slice(Usersapplyingchangeable.findIndex(e => e.id == Member.id), Usersapplyingchangeable.findIndex(e => e.id == Member.id))
+                    } else message.channel.send("the user was accepted/denied already!")}
                     else{
-                        message.channel.send("the second argument should be 0 or 1 whetever the player is applied as Adventurer.");
+                        message.channel.send("the second argument should be 0 or 1 whetever the player is applied as Explorer.");
                     }
                 }
                 else{
-                    message.channel.send("the second argument should be 0 or 1 whetever the player is applied as Builder.");
+                    message.channel.send("the third argument should be 0 or 1 whetever the player is applied as Builder.");
                 }
             }
             else message.channel.send("the second argument should be 0 or 1 whetever the player is applied as Pvper.");} else
             message.channel.send("the user didn't applied!")
         } else message.channel.send("first argument isn't a user!")
-    }else message.channel.send("you must enter the arguments!");
-}
+    }else{
+        message.channel.send("you must enter the arguments!");
+        message.channel.send("arguments format is ;accept [Ping] [Pvper] [Builder] [Explorer] where you replace [Pvper], [Builder] and [Explorer] with 0 if not to give that corresponding role or 1 if to give the corresponding role.")
+        message.channel.send("and [Ping] with the user's ping. try getting his ping by going in a non-member channel, get his ping, copy it, and paste it here.")
+    }
+} else message.channel.send("You do not have the required role to access this command!")}
 }
 )
 
